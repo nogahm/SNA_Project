@@ -3,8 +3,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 # import community
 from functools import reduce
-from networkx.algorithms.community import girvan_newman
+# from networkx.algorithms.community import girvan_newman
 import csv
+
+# csv files:
+# nodes - list of nodes
+# edges - list of edges (edge=two nodes)
+# groups - list of groups
+# group-edges - user and group he belong to
+
 
 # globals
 graph={}
@@ -12,18 +19,18 @@ graph={}
 # read csv file into graph
 def csvToGraph():
     global graph
-    Data=pd.read_csv('thrones-network.csv')
-    graph=nx.from_pandas_edgelist(Data,source='Node A', target='Node B', edge_attr='Weight')
-    graph=nx.to_undirected(graph)
+    Data=pd.read_csv('BlogCatalog3\\edges.csv', header=None, names=["A", "B"])
+    graph=nx.from_pandas_dataframe(Data, source="A", target="B")
+    # convert graph to undirected
     graph=nx.Graph(graph)
-    # print(graph)
+    print(graph)
 
-# remove edges with weight<6
+# remove nodes with less than 10 connection
 def removeEdges():
     global graph
-    remove = [edge for edge in graph.edges().items() if edge[1]['Weight'] < 6]
-    remove_list=[remove[i][0] for i in range(len(remove))]
-    graph.remove_edges_from(remove_list)
+    remove = [node for node in graph.nodes() if len(graph.neighbors(node)) < 30]
+    # remove_list=[remove[i][0] for i in range(len(remove))]
+    graph.remove_nodes_from(remove)
     # remove nodes with no edge
     graph.remove_nodes_from(list(nx.isolates(graph)))
 
