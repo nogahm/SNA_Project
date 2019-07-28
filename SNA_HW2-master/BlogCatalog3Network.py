@@ -3,7 +3,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 # import community
 from functools import reduce
-# from networkx.algorithms.community import girvan_newman
+# from networkx import girvan_newman
+from networkx.algorithms import community
+from networkx.algorithms.community.centrality import girvan_newman
+
 import csv
 
 # csv files:
@@ -20,7 +23,7 @@ graph={}
 def csvToGraph():
     global graph
     Data=pd.read_csv('BlogCatalog3\\edges.csv', header=None, names=["A", "B"])
-    graph=nx.from_pandas_dataframe(Data, source="A", target="B")
+    graph=nx.from_pandas_edgelist(Data, source="A", target="B")
     # convert graph to undirected
     graph=nx.Graph(graph)
     print(graph)
@@ -28,7 +31,7 @@ def csvToGraph():
 # remove nodes with less than 10 connection
 def removeEdges():
     global graph
-    remove = [node for node in graph.nodes() if len(graph.neighbors(node)) < 30]
+    remove = [node for node in graph.nodes() if len(list(graph.neighbors(node))) < 100]
     # remove_list=[remove[i][0] for i in range(len(remove))]
     graph.remove_nodes_from(remove)
     # remove nodes with no edge
@@ -86,21 +89,21 @@ def printTopTenByCenterality():
     df.columns=['Centrality']
     print(df)
 
-    intersectionTop([topTen1, topTen2, topTen3, topTen4])
+    intersectionTop([topTen1, topTen2, topTen4])
 
 # intersection between all types of centraluty
 def intersectionTop(dicts):
     ld=dicts
     res = list(reduce(lambda x, y: x & y.keys(), ld))
     # print the intersection between all top10 lists
-    print("The most central characters in all centrality types: ",str(res))
+    print("The most central blogers in all centrality types: ",str(res))
 
 # find communities
 def findCommunity():
     global graph
-    gn_comm=girvan_newman(graph)
-    for i in range(0,2):
-        current=(tuple(sorted(c) for c in next(gn_comm)))
+    gn_comm=community.girvan_newman(graph)
+    for i in range(0,38):
+         current=(tuple(sorted(c) for c in next(gn_comm)))
         # print("partition "+ str(i))
         # print(dict(enumerate(current)))
 
@@ -160,8 +163,8 @@ def drawGraphWithCommunitiesAndCentrality(comm):
 def main():
     csvToGraph()
     removeEdges()
-    printGraphParams()
-    printTopTenByCenterality()
+    # printGraphParams()
+    # printTopTenByCenterality()
     comm=findCommunity()
     linkPredictionAdamic()
     linkPredictionJaccard()
