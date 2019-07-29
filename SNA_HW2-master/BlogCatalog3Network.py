@@ -31,7 +31,7 @@ def csvToGraph():
 # remove nodes with less than 10 connection
 def removeEdges():
     global graph
-    remove = [node for node in graph.nodes() if len(list(graph.neighbors(node))) < 100]
+    remove = [node for node in graph.nodes() if len(list(graph.neighbors(node))) < 250]
     # remove_list=[remove[i][0] for i in range(len(remove))]
     graph.remove_nodes_from(remove)
     # remove nodes with no edge
@@ -89,7 +89,7 @@ def printTopTenByCenterality():
     df.columns=['Centrality']
     print(df)
 
-    intersectionTop([topTen1, topTen2, topTen4])
+    intersectionTop([topTen1,topTen3, topTen2, topTen4])
 
 # intersection between all types of centraluty
 def intersectionTop(dicts):
@@ -101,27 +101,19 @@ def intersectionTop(dicts):
 # find communities
 def findCommunity():
     global graph
-    gn_comm=community.girvan_newman(graph)
-    for i in range(0,38):
-         current=(tuple(sorted(c) for c in next(gn_comm)))
-        # print("partition "+ str(i))
-        # print(dict(enumerate(current)))
+    import community
+    comm = community.best_partition(graph)
+    return comm
+    # write to excel
+    # mod = community.modularity(comm, graph)
+    # print('modularity: ', mod)
+    # df = pd.DataFrame(data=comm, index=[0])
+    #
+    # df = (df.T)
+    #
+    # print(df)
+    # df.to_excel('output.xlsx')
 
-    comm=tuple(sorted(c) for c in next(gn_comm))
-    for c in comm:
-        print(c)
-        subGraph=graph.subgraph(c)
-        print(nx.info(subGraph))
-        print("Density: ", nx.density(subGraph))
-    d=dict(enumerate(comm))
-    # print(d)
-
-    inverse = dict()
-    for key in d:
-        # Go through the list that is saved in the dict:
-        for item in d[key]:
-            inverse[item] = key
-    return inverse
 
 # top 10 predictions to link - jaccard
 def linkPredictionJaccard():
@@ -144,17 +136,25 @@ def linkPredictionAdamic():
 def drawGraphWithCommunitiesAndCentrality(comm):
     global graph
     # size by betweenness centrality
-    lower, upper = 100, 2000
-    temp = ({k:  v for k, v in nx.betweenness_centrality(graph).items()}).values()
+    lower, upper = 10, 1000
+    temp = ({k:  v for k, v in nx.degree_centrality(graph).items()}).values()
     node_size = [lower + (upper - lower) * x for x in temp]
 
+    tempGraph=graph.copy()
+    remove = [node for node in tempGraph.nodes() if len(list(tempGraph.neighbors(node))) < 250]
+    # remove_list=[remove[i][0] for i in range(len(remove))]
+    tempGraph.remove_nodes_from(remove)
+    # remove nodes with no edge
+    tempGraph.remove_nodes_from(list(nx.isolates(tempGraph)))
+
+
     partition=comm
-    pos = nx.spring_layout(graph)  # compute graph layout
+    pos = nx.random_layout(graph)  # compute graph layout
     plt.figure(figsize=(10, 10))  # image is 10 x 10 inches
     plt.axis('off')
-    plt.title("Games Of Thrones: Colored by community, Sized by betweennes centrality")
+    plt.title("Bloggers Network: Colored by community, Sized by degree centrality")
     nx.draw_networkx_nodes(graph, pos, node_size=node_size, node_color=list(partition.values()))
-    nx.draw_networkx_edges(graph, pos, alpha=0.3)
+    nx.draw_networkx_edges(tempGraph, pos, alpha=0.3)
     nx.draw_networkx_labels(graph,pos, font_size =8, font_color ='grey')
     plt.show(graph)
 
@@ -163,13 +163,11 @@ def drawGraphWithCommunitiesAndCentrality(comm):
 def main():
     csvToGraph()
     removeEdges()
-    # printGraphParams()
-    # printTopTenByCenterality()
+    printGraphParams()
+    printTopTenByCenterality()
     comm=findCommunity()
     linkPredictionAdamic()
     linkPredictionJaccard()
     drawGraphWithCommunitiesAndCentrality(comm)
-
-
 
 main()
