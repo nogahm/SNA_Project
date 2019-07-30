@@ -1,38 +1,28 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
-# import community
 from functools import reduce
-# from networkx import girvan_newman
 from networkx.algorithms import community
 from networkx.algorithms.community.centrality import girvan_newman
-
 import csv
-
-# csv files:
-# nodes - list of nodes
-# edges - list of edges (edge=two nodes)
-# groups - list of groups
-# group-edges - user and group he belong to
 
 
 # globals
 graph={}
 
-# read csv file into graph
+# read csv file into graph object
 def csvToGraph():
     global graph
     Data=pd.read_csv('BlogCatalog3\\edges.csv', header=None, names=["A", "B"])
     graph=nx.from_pandas_edgelist(Data, source="A", target="B")
-    # convert graph to undirected
     graph=nx.Graph(graph)
     print(graph)
 
-# remove nodes with less than 10 connection
+# remove nodes with less than 250 neighbors
 def removeEdges():
     global graph
+    # get nodes to remove
     remove = [node for node in graph.nodes() if len(list(graph.neighbors(node))) < 250]
-    # remove_list=[remove[i][0] for i in range(len(remove))]
     graph.remove_nodes_from(remove)
     # remove nodes with no edge
     graph.remove_nodes_from(list(nx.isolates(graph)))
@@ -46,7 +36,7 @@ def printGraphParams():
     print('density is: ', nx.density(graph))
     # print diameter
     print('diameter is: ', nx.diameter(graph))
-    # degree distribution
+    # degree distribution histogram
     degrees=[graph.degree(n) for n in graph.nodes()]
     plt.hist(degrees)
     plt.title("Degree Distribution Histogram")
@@ -104,15 +94,7 @@ def findCommunity():
     import community
     comm = community.best_partition(graph)
     return comm
-    # write to excel
-    # mod = community.modularity(comm, graph)
-    # print('modularity: ', mod)
-    # df = pd.DataFrame(data=comm, index=[0])
-    #
-    # df = (df.T)
-    #
-    # print(df)
-    # df.to_excel('output.xlsx')
+
 
 
 # top 10 predictions to link - jaccard
@@ -133,20 +115,20 @@ def linkPredictionAdamic():
         pred_aa_dict[(u, v)] = p
     print(sorted(pred_aa_dict.items(), key=lambda x: x[1], reverse=True)[:10])
 
+# Draw network graph
 def drawGraphWithCommunitiesAndCentrality(comm):
     global graph
-    # size by betweenness centrality
+    # size by degree centrality
     lower, upper = 10, 1000
     temp = ({k:  v for k, v in nx.degree_centrality(graph).items()}).values()
     node_size = [lower + (upper - lower) * x for x in temp]
 
+    # remove edges of nodes with less than 250 neighbors
     tempGraph=graph.copy()
     remove = [node for node in tempGraph.nodes() if len(list(tempGraph.neighbors(node))) < 250]
-    # remove_list=[remove[i][0] for i in range(len(remove))]
     tempGraph.remove_nodes_from(remove)
     # remove nodes with no edge
     tempGraph.remove_nodes_from(list(nx.isolates(tempGraph)))
-
 
     partition=comm
     pos = nx.random_layout(graph)  # compute graph layout
@@ -157,7 +139,6 @@ def drawGraphWithCommunitiesAndCentrality(comm):
     nx.draw_networkx_edges(tempGraph, pos, alpha=0.3)
     nx.draw_networkx_labels(graph,pos, font_size =8, font_color ='grey')
     plt.show(graph)
-
 
 # main
 def main():
